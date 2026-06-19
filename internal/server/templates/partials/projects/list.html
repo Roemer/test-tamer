@@ -1,0 +1,43 @@
+{{- define "partials/projects/list.html" -}}
+{{ template "table" .ProjectsTable }}
+
+{{ if .Paging }}
+{{ with .Paging }}
+{{ $currentPage := .Page }}
+{{ $pageSize := .PageSize }}
+{{ $nextPage := .NextPage }}
+{{ $prevPage := .PrevPage }}
+<div class="d-flex align-items-center gap-2 mt-3">
+  <nav aria-label="Page navigation example">
+    <ul class="pagination mb-0">
+      <li class="page-item {{ if not .HasPrev }}disabled{{ end }}">
+        <a class="page-link" {{ if .HasPrev }}href="/projects?page-size={{ .PageSize }}&page={{ .PrevPage }}"
+          hx-get="/projects?page-size={{ .PageSize }}&page={{ .PrevPage }}" hx-target="#project-list"
+          hx-swap="innerHTML" hx-push-url="true" hx-indicator="#projects-pagination-loading" {{ else }}href="#"
+          aria-disabled="true" tabindex="-1" {{ end }}>Previous</a>
+      </li>
+
+      {{ range .Pages }}
+      <li class="page-item {{ if eq . $currentPage }}active{{ end }}">
+        <a class="page-link" href="/projects?page-size={{ $pageSize }}&page={{ . }}"
+          hx-get="/projects?page-size={{ $pageSize }}&page={{ . }}" hx-target="#project-list" hx-swap="innerHTML"
+          hx-push-url="true" hx-indicator="#projects-pagination-loading">{{
+          . }}</a>
+      </li>
+      {{ end }}
+
+      <li class="page-item {{ if not .HasNext }}disabled{{ end }}">
+        <a class="page-link" {{ if .HasNext }}href="/projects?page-size={{ .PageSize }}&page={{ .NextPage }}"
+          hx-get="/projects?page-size={{ .PageSize }}&page={{ .NextPage }}" hx-target="#project-list"
+          hx-swap="innerHTML" hx-push-url="true" hx-indicator="#projects-pagination-loading" {{ else }}href="#"
+          aria-disabled="true" tabindex="-1" {{ end }}>Next</a>
+      </li>
+    </ul>
+  </nav>
+  <div id="projects-pagination-loading" class="htmx-indicator" aria-hidden="true">
+    <span class="spinner-border spinner-border-sm text-secondary" role="status"></span>
+  </div>
+</div>
+{{ end }}
+{{ end }}
+{{ end }}

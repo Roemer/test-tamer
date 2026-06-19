@@ -1,0 +1,17 @@
+{{ define "content" }}
+
+<h4>Projects</h4>
+
+<div
+  id="project-list"
+  hx-get="/projects?page-size={{ .PageSize }}&page={{ .Page}}"
+  hx-trigger="load"
+  hx-swap="innerHTML"
+>
+  <div class="d-flex align-items-center gap-2 text-secondary">
+    <div class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>
+    <span>Loading projects...</span>
+  </div>
+</div>
+
+{{ end }}

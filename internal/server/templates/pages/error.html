@@ -1,0 +1,23 @@
+{{ define "title" }}{{ .StatusCode }} - {{ .StatusText }}{{ end }}
+
+{{ define "content" }}
+<div class="text-center py-5">
+  <div class="mb-4">
+    <h1 class="display-1 fw-bold text-danger">{{ .StatusCode }}</h1>
+    <h2 class="h3 text-secondary mb-3">{{ .StatusText }}</h2>
+  </div>
+
+  <p class="lead mb-4">{{ .Message }}</p>
+
+  {{- if .Details }}
+  <div class="alert alert-light text-start mb-4" style="max-width: 600px; margin: 0 auto;">
+    <p class="mb-0 text-muted small"><code>{{ .Details }}</code></p>
+  </div>
+  {{- end }}
+
+  <div class="d-flex gap-2 justify-content-center flex-wrap">
+    <a href="/" class="btn btn-primary">Back to Home</a>
+    <button class="btn btn-outline-secondary" onclick="window.history.back()">Go Back</button>
+  </div>
+</div>
+{{ end }}
