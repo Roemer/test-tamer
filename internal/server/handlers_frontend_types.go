@@ -52,17 +52,6 @@ func newPaging(baseUrl, target string, page, pageSize, totalItems int) *pagingDa
 	}
 }
 
-func (p *pagingData) Pages() []pagingDataPage {
-	pages := make([]pagingDataPage, 0, p.TotalPages)
-	for page := 1; page <= p.TotalPages; page++ {
-		pages = append(pages, pagingDataPage{
-			PageNum:   page,
-			IsCurrent: page == p.Page,
-		})
-	}
-	return pages
-}
-
 func (p *pagingData) PageUrl(pageNum int) string {
 	return p.BaseUrl + "?" + p.pageQueryPart(pageNum)
 }

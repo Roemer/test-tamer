@@ -87,7 +87,7 @@ func (s *Server) handlePageNotFound(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) renderPartial(w http.ResponseWriter, templateName string, data any) {
-	tmpl, err := template.ParseFS(s.templatesFS, "components/*.html", templateName)
+	tmpl, err := template.New("").Funcs(s.templateFuncs()).ParseFS(s.templatesFS, "components/*.html", templateName)
 	if err != nil {
 		slog.Error("failed to parse partial template", "template_name", templateName, "error", err)
 		http.Error(w, "Failed to render content.", http.StatusInternalServerError)
@@ -100,11 +100,7 @@ func (s *Server) renderPartial(w http.ResponseWriter, templateName string, data 
 }
 
 func (s *Server) renderPage(w http.ResponseWriter, r *http.Request, pageTemplate string, data any) {
-	tmpl, err := template.New("").Funcs(template.FuncMap{
-		"appVersion": func() string {
-			return s.config.Version
-		},
-	}).ParseFS(s.templatesFS, "layouts/base.html", "components/*.html", pageTemplate)
+	tmpl, err := template.New("").Funcs(s.templateFuncs()).ParseFS(s.templatesFS, "layouts/base.html", "components/*.html", pageTemplate)
 	if err != nil {
 		slog.Error("failed to parse templates", "error", err)
 		s.renderErrorPage(w, http.StatusInternalServerError, "Template Error", "Failed to render page.", "")
@@ -118,11 +114,7 @@ func (s *Server) renderPage(w http.ResponseWriter, r *http.Request, pageTemplate
 }
 
 func (s *Server) renderErrorPage(w http.ResponseWriter, statusCode int, statusText, message string, details string) {
-	tmpl, err := template.New("").Funcs(template.FuncMap{
-		"appVersion": func() string {
-			return s.config.Version
-		},
-	}).ParseFS(s.templatesFS, "layouts/base.html", "pages/error.html")
+	tmpl, err := template.New("").Funcs(s.templateFuncs()).ParseFS(s.templatesFS, "layouts/base.html", "pages/error.html")
 	if err != nil {
 		slog.Error("failed to parse error template", "error", err)
 		http.Error(w, statusText, statusCode)
@@ -148,5 +140,20 @@ func (s *Server) renderErrorPage(w http.ResponseWriter, statusCode int, statusTe
 	w.WriteHeader(statusCode)
 	if err := tmpl.ExecuteTemplate(w, "base", data); err != nil {
 		slog.Error("failed to render error page", "error", err)
+	}
+}
+
+func (s *Server) templateFuncs() template.FuncMap {
+	return template.FuncMap{
+		"appVersion": func() string {
+			return s.config.Version
+		},
+		"iterate": func(n int) []int {
+			s := make([]int, n)
+			for i := range s {
+				s[i] = i + 1
+			}
+			return s
+		},
 	}
 }
