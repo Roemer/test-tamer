@@ -1,12 +1,15 @@
 package main
 
 import (
+	"crypto/sha512"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"os"
+	"regexp"
 	"time"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -22,7 +25,7 @@ func main() {
 }
 
 func init() {
-	gotaskr.Task("init:vendor", initVendor)
+	gotaskr.Task("vendor:init", vendorInit)
 	gotaskr.Task("db-down", dbDown)
 	gotaskr.Task("db-up", dbUp)
 }
@@ -31,35 +34,53 @@ func init() {
 // Tasks
 ////////////////////////////////////////////////////////////
 
-func initVendor() error {
+func vendorInit() error {
 	vendorDir := "internal/server/static/vendor"
 	if err := os.MkdirAll(vendorDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create vendor dir: %w", err)
 	}
 
-	// Bootstrap
-	{
-		version := "5.3.8"
-		cssFile := fmt.Sprintf("https://cdn.jsdelivr.net/npm/bootstrap@%s/dist/css/bootstrap.min.css", version)
-		jsFile := fmt.Sprintf("https://cdn.jsdelivr.net/npm/bootstrap@%s/dist/js/bootstrap.bundle.min.js", version)
-
-		// Download the files
-		if err := downloadFile(cssFile, fmt.Sprintf("%s/bootstrap.min.css", vendorDir)); err != nil {
-			return fmt.Errorf("failed to download CSS: %w", err)
-		}
-		if err := downloadFile(jsFile, fmt.Sprintf("%s/bootstrap.bundle.min.js", vendorDir)); err != nil {
-			return fmt.Errorf("failed to download JS: %w", err)
-		}
+	bootstrapVersion := "5.3.8"
+	htmxVersion := "2.0.10"
+	type file struct {
+		Url  string
+		Dest string
 	}
 
-	// htmx
-	{
-		version := "2.0.10"
-		jsFile := fmt.Sprintf("https://cdn.jsdelivr.net/npm/htmx.org@%s/dist/htmx.min.js", version)
+	files := []file{
+		// Bootstrap CSS and JS
+		{
+			Url:  fmt.Sprintf("https://cdn.jsdelivr.net/npm/bootstrap@%s/dist/css/bootstrap.min.css", bootstrapVersion),
+			Dest: "bootstrap.min.css",
+		},
+		{
+			Url:  fmt.Sprintf("https://cdn.jsdelivr.net/npm/bootstrap@%s/dist/js/bootstrap.bundle.min.js", bootstrapVersion),
+			Dest: "bootstrap.bundle.min.js",
+		},
+		// htmx JS
+		{
+			Url:  fmt.Sprintf("https://cdn.jsdelivr.net/npm/htmx.org@%s/dist/htmx.min.js", htmxVersion),
+			Dest: "htmx.min.js",
+		},
+	}
 
-		// Download the file
-		if err := downloadFile(jsFile, fmt.Sprintf("%s/htmx.min.js", vendorDir)); err != nil {
-			return fmt.Errorf("failed to download htmx: %w", err)
+	// Process the files
+	for _, f := range files {
+		targetPath := fmt.Sprintf("%s/%s", vendorDir, f.Dest)
+		if err := downloadFile(f.Url, targetPath); err != nil {
+			return fmt.Errorf("failed to download file '%s': %w", f.Url, err)
+		}
+		// Calculate the SHA384 checksum of the downloaded file
+		data, err := os.ReadFile(targetPath)
+		if err != nil {
+			return fmt.Errorf("failed to read file '%s': %w", targetPath, err)
+		}
+		hash := sha512.Sum384(data)
+		shaString := "sha384-" + base64.StdEncoding.EncodeToString(hash[:])
+
+		// Verify the integrity checksum inside the templates
+		if err := vendorCheckIntegrity("internal/server/templates/layouts/base.html", f.Dest, shaString); err != nil {
+			return err
 		}
 	}
 
@@ -135,4 +156,26 @@ func createMigrator() (*migrate.Migrate, error) {
 	m.Log = db.DbMigrationConsoleLogger{}
 
 	return m, nil
+}
+
+func vendorCheckIntegrity(templateFile string, dependency string, expectedChecksum string) error {
+	// src or href = the dependency, integrity="<the sha checksum>"
+	regexPattern := regexp.MustCompile(fmt.Sprintf(`(?:src|href)\s*=\s*["'].*%s["'].*integrity\s*=\s*["']([^"']+)["']`, dependency))
+	fileContent, err := os.ReadFile(templateFile)
+	if err != nil {
+		return fmt.Errorf("failed to read template file '%s': %w", templateFile, err)
+	}
+
+	matches := regexPattern.FindAllStringSubmatch(string(fileContent), -1)
+	if len(matches) == 0 {
+		return fmt.Errorf("no integrity attribute found for dependency '%s' in template '%s'", dependency, templateFile)
+	}
+
+	actualChecksum := matches[0][1]
+	if actualChecksum != expectedChecksum {
+		return fmt.Errorf("integrity checksum mismatch for dependency '%s' in template '%s': expected '%s', got '%s'", dependency, templateFile, expectedChecksum, actualChecksum)
+	}
+
+	slog.Info("integrity checksum verified", "dependency", dependency, "template", templateFile)
+	return nil
 }

@@ -1,6 +1,9 @@
 package server
 
-import "strconv"
+import (
+	"strconv"
+	"strings"
+)
 
 const (
 	defaultPageSize = 10
@@ -14,16 +17,18 @@ type breadcrumbItem struct {
 }
 
 type pagingData struct {
-	BaseUrl    string
-	Target     string
-	Page       int
-	PageSize   int
-	TotalItems int
-	TotalPages int
-	HasPrev    bool
-	HasNext    bool
-	PrevPage   int
-	NextPage   int
+	BaseUrl           string
+	Target            string
+	IndicatorID       string
+	IndicatorSelector string
+	Page              int
+	PageSize          int
+	TotalItems        int
+	TotalPages        int
+	HasPrev           bool
+	HasNext           bool
+	PrevPage          int
+	NextPage          int
 }
 
 type pagingDataPage struct {
@@ -36,19 +41,22 @@ func newPaging(baseUrl, target string, page, pageSize, totalItems int) *pagingDa
 		pageSize = defaultPageSize
 	}
 	pageSize = min(pageSize, maxPageSize)
+	indicatorID := strings.TrimPrefix(target, "#") + "-loading"
 	totalPages := max((totalItems+pageSize-1)/pageSize, 1)
 	page = max(1, min(page, totalPages))
 	return &pagingData{
-		BaseUrl:    baseUrl,
-		Target:     target,
-		Page:       page,
-		PageSize:   pageSize,
-		TotalItems: totalItems,
-		TotalPages: totalPages,
-		HasPrev:    page > 1,
-		HasNext:    page < totalPages,
-		PrevPage:   max(1, page-1),
-		NextPage:   min(totalPages, page+1),
+		BaseUrl:           baseUrl,
+		Target:            target,
+		IndicatorID:       indicatorID,
+		IndicatorSelector: "#" + indicatorID,
+		Page:              page,
+		PageSize:          pageSize,
+		TotalItems:        totalItems,
+		TotalPages:        totalPages,
+		HasPrev:           page > 1,
+		HasNext:           page < totalPages,
+		PrevPage:          max(1, page-1),
+		NextPage:          min(totalPages, page+1),
 	}
 }
 

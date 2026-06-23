@@ -19,6 +19,7 @@ func (s *Server) handleFrontendIndex(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleFrontendProjects(w http.ResponseWriter, r *http.Request) {
 	page := queryParseInt(r, "page", 1)
 	pageSize := queryParseInt(r, "page-size", defaultPageSize)
+	pageSize = min(pageSize, maxPageSize)
 
 	if r.Header.Get("HX-Request") == "true" {
 		type partialData struct {

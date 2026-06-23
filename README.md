@@ -9,7 +9,7 @@ Postgres 18
 Make sure to initialize the vendor scripts:
 
 ```
-go run "./build" --target "init:vendor"
+go run "./build" --target "vendor:init"
 ```
 
 Run the server with fake data:
