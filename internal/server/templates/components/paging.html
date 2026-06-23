@@ -15,12 +15,16 @@
       </li>
       {{ end }}
 
-      {{ range iterate .TotalPages }}
-      <li class="page-item {{ if eq . $.Page }}active{{ end }}">
-        <a class="page-link" href="{{ $.PageUrl . }}"
-          hx-get="{{ $.PageUrl . }}" hx-target="{{ $.Target }}" hx-swap="innerHTML"
-          hx-push-url="true" hx-indicator="{{ $.IndicatorSelector }}">{{ . }}</a>
+      {{ range .Items }}
+      {{ if .IsGap }}
+      <li class="page-item disabled"><span class="page-link">{{ .Label }}</span></li>
+      {{ else }}
+      <li class="page-item {{ if .IsCurrent }}active{{ end }}">
+        <a class="page-link" href="{{ $.PageUrl .PageNum }}"
+          hx-get="{{ $.PageUrl .PageNum }}" hx-target="{{ $.Target }}" hx-swap="innerHTML"
+          hx-push-url="true" hx-indicator="{{ $.IndicatorSelector }}">{{ .Label }}</a>
       </li>
+      {{ end }}
       {{ end }}
 
       {{ if .HasNext }}
