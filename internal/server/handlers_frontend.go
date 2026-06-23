@@ -33,7 +33,7 @@ func (s *Server) handleFrontendProjects(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 
-		paging := newPaging(page, pageSize, totalProjects)
+		paging := newPaging("/projects", "#project-list", page, pageSize, totalProjects)
 
 		projects, err := s.config.Store.Repos().Project.ListPaged(r.Context(), paging.Page, paging.PageSize)
 		if err != nil {

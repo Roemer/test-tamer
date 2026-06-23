@@ -1,0 +1,45 @@
+{{- define "paging" -}}
+
+<div class="d-flex align-items-center gap-2 mt-3">
+  <nav aria-label="Page navigation example">
+    <ul class="pagination mb-0">
+      {{ if .HasPrev }}
+      <li class="page-item">
+        <a class="page-link" href="{{ .PageUrl .PrevPage }}"
+          hx-get="{{ .PageUrl .PrevPage }}" hx-target="{{ .Target }}" hx-swap="innerHTML"
+          hx-push-url="true" hx-indicator="{{ .Target }}-loading">Previous</a>
+      </li>
+      {{ else }}
+      <li class="page-item disabled">
+        <a class="page-link" href="#" aria-disabled="true" tabindex="-1">Previous</a>
+      </li>
+      {{ end }}
+
+      {{ range .Pages }}
+      <li class="page-item {{ if .IsCurrent }}active{{ end }}">
+        <a class="page-link" href="{{ $.PageUrl .PageNum }}"
+          hx-get="{{ $.PageUrl .PageNum }}" hx-target="{{ $.Target }}" hx-swap="innerHTML"
+          hx-push-url="true" hx-indicator="{{ $.Target }}-loading">{{
+          .PageNum }}</a>
+      </li>
+      {{ end }}
+
+      {{ if .HasNext }}
+      <li class="page-item">
+        <a class="page-link" href="{{ .PageUrl .NextPage }}"
+          hx-get="{{ .PageUrl .NextPage }}" hx-target="{{ .Target }}" hx-swap="innerHTML"
+          hx-push-url="true" hx-indicator="{{ .Target }}-loading">Next</a>
+      </li>
+      {{ else }}
+      <li class="page-item disabled">
+        <a class="page-link" href="#" aria-disabled="true" tabindex="-1">Next</a>
+      </li>
+      {{ end }}
+    </ul>
+  </nav>
+  <div id="{{ .Target }}-loading" class="htmx-indicator" aria-hidden="true">
+    <span class="spinner-border spinner-border-sm text-secondary" role="status"></span>
+  </div>
+</div>
+
+{{ end }}
