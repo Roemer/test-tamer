@@ -4,7 +4,6 @@ import (
 	"html/template"
 	"log/slog"
 	"net/http"
-	"strconv"
 )
 
 func (s *Server) handleFrontendIndex(w http.ResponseWriter, r *http.Request) {
@@ -56,7 +55,7 @@ func (s *Server) handleFrontendProjects(w http.ResponseWriter, r *http.Request) 
 		for _, project := range projects {
 			data.ProjectsTable.Rows = append(data.ProjectsTable.Rows, tableComponentRow{
 				Cells: []tableComponentCell{
-					{Value: strconv.FormatInt(project.ID, 10)},
+					{Value: project.PublicID.String()},
 					{Value: project.Name},
 				},
 			})

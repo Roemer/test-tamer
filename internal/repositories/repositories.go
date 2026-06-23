@@ -59,6 +59,7 @@ func createBaseEntity(ctx context.Context, db DBTX, entity *entities.BaseEntity,
 	row := db.QueryRow(ctx, query, args)
 	err := row.Scan(
 		&entity.ID,
+		&entity.PublicID,
 		&entity.CreatedAt,
 		&entity.UpdatedAt,
 	)

@@ -23,7 +23,7 @@ func NewProjectRepository(db DBTX) ProjectRepository {
 
 func (r *projectRepository) List(ctx context.Context) ([]entities.Project, error) {
 	query := `
-		SELECT id, created_at, updated_at, name
+		SELECT id, public_id, created_at, updated_at, name
 		FROM projects
 		ORDER BY id ASC`
 	return queryAndCollectRows[entities.Project](ctx, r.db, query, nil)
@@ -35,7 +35,7 @@ func (r *projectRepository) ListPaged(ctx context.Context, page, pageSize int) (
 	}
 	offset := (page - 1) * pageSize
 	query := `
-		SELECT id, created_at, updated_at, name
+		SELECT id, public_id, created_at, updated_at, name
 		FROM projects
 		ORDER BY id ASC
 		LIMIT @limit OFFSET @offset`

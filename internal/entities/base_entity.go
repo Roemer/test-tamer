@@ -4,10 +4,13 @@ import (
 	"reflect"
 	"strconv"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type BaseEntity struct {
 	ID        int64     `db:"id"`
+	PublicID  uuid.UUID `db:"public_id"`
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
 }

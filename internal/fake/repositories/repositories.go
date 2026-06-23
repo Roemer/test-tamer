@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/roemer/test-tamer/internal/entities"
 	"github.com/roemer/test-tamer/internal/store"
 )
@@ -15,6 +16,7 @@ func NewFakeRepositories() *store.Repositories {
 		project := entities.Project{
 			BaseEntity: entities.BaseEntity{
 				ID:        int64(i + 1),
+				PublicID:  uuid.Must(uuid.NewV7()),
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			},
