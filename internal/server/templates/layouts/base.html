@@ -32,6 +32,13 @@
         font-weight: 700;
       }
 
+      .tt-subtitle {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 0.85rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
       .tt-brand {
         display: inline-flex;
         align-items: center;
@@ -77,15 +84,18 @@
   <body>
     <header class="tt-hero py-4 py-md-5">
       <div class="container">
-        <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
+        <div class="d-flex align-items-center gap-3 flex-wrap">
           <div class="tt-brand">
             <img src="/static/imgs/test-tamer-logo.png" alt="Test Tamer logo" class="tt-logo">
             <div>
             <p class="mb-1 text-white-50">QA Orchestration</p>
             <h1 class="h3 h2-md tt-title mb-0">Test Tamer</h1>
+            {{- $subtitle := subtitle }}
+            {{- if $subtitle }}
+            <p class="tt-subtitle mb-0 mt-1">{{ $subtitle }}</p>
+            {{- end }}
             </div>
           </div>
-          <span class="badge text-bg-light text-primary-emphasis fs-6">Dashboard</span>
         </div>
       </div>
     </header>

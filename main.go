@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"log/slog"
+	"os"
 
 	"github.com/roemer/test-tamer/internal/db"
 	fstore "github.com/roemer/test-tamer/internal/fake/store"
@@ -58,10 +59,16 @@ func main() {
 	}
 
 	// Configure the server
+	subtitle, subtitleDefined := os.LookupEnv("TEST_TAMER_SUBTITLE")
+	if !subtitleDefined {
+		subtitle = "Dashboard"
+	}
+
 	config := server.Config{
-		Address: ":8080",
-		Version: version,
-		Store:   serverStore,
+		Address:  ":8080",
+		Version:  version,
+		Subtitle: subtitle,
+		Store:    serverStore,
 	}
 	// Start HTTP server
 	ser := server.New(config)

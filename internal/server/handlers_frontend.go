@@ -149,6 +149,9 @@ func (s *Server) templateFuncs() template.FuncMap {
 		"appVersion": func() string {
 			return s.config.Version
 		},
+		"subtitle": func() string {
+			return s.config.Subtitle
+		},
 		"iterate": func(n int) []int {
 			s := make([]int, n)
 			for i := range s {
