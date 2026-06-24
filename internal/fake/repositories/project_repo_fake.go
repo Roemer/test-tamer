@@ -2,7 +2,9 @@ package repositories
 
 import (
 	"context"
+	"slices"
 
+	"github.com/google/uuid"
 	"github.com/roemer/test-tamer/internal/entities"
 	"github.com/roemer/test-tamer/internal/repositories"
 )
@@ -46,4 +48,14 @@ func (r *fakeProjectRepository) ListPaged(ctx context.Context, page, pageSize in
 func (r *fakeProjectRepository) Count(ctx context.Context) (int, error) {
 	_ = ctx
 	return len(r.projects), nil
+}
+
+func (r *fakeProjectRepository) DeleteByPublicID(ctx context.Context, publicID uuid.UUID) error {
+	for i := range r.projects {
+		if r.projects[i].PublicID == publicID {
+			r.projects = slices.Delete(r.projects, i, i+1)
+			return nil
+		}
+	}
+	return repositories.ErrNotFound
 }

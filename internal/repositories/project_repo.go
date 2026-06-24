@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/roemer/test-tamer/internal/entities"
 )
@@ -11,6 +12,7 @@ type ProjectRepository interface {
 	List(ctx context.Context) ([]entities.Project, error)
 	ListPaged(ctx context.Context, page, pageSize int) ([]entities.Project, error)
 	Count(ctx context.Context) (int, error)
+	DeleteByPublicID(ctx context.Context, publicID uuid.UUID) error
 }
 
 type projectRepository struct {
@@ -54,4 +56,13 @@ func (r *projectRepository) Count(ctx context.Context) (int, error) {
 		return 0, translatePgError(err)
 	}
 	return total, nil
+}
+
+func (r *projectRepository) DeleteByPublicID(ctx context.Context, publicID uuid.UUID) error {
+	query := `
+		DELETE FROM projects
+		WHERE public_id = @public_id`
+	return execDelete(ctx, r.db, query, pgx.NamedArgs{
+		"public_id": publicID,
+	})
 }
