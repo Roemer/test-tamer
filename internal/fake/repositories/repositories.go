@@ -12,7 +12,7 @@ import (
 // NewFakeRepositories creates a new Repositories instance with a provided project repository.
 func NewFakeRepositories() *store.Repositories {
 	projects := []entities.Project{}
-	for i := range 35 {
+	for i := range 350 {
 		project := entities.Project{
 			BaseEntity: entities.BaseEntity{
 				ID:        int64(i + 1),

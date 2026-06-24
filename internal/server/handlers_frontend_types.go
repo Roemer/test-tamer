@@ -65,9 +65,9 @@ func newPaging(baseUrl, target string, page, pageSize, totalItems int) *pagingDa
 }
 
 func buildPagingItems(page, totalPages int) []pagingItem {
-	const maxPagesToShow = 9
+	const maxPagesToShow = 9 // Needs to be uneven!
 
-	// Special case: all pages fit without any ellipsis
+	// Special case when all pages can be shown without gaps
 	if totalPages <= maxPagesToShow {
 		items := make([]pagingItem, 0, totalPages)
 		for i := 1; i <= totalPages; i++ {
@@ -76,61 +76,53 @@ func buildPagingItems(page, totalPages int) []pagingItem {
 		return items
 	}
 
-	// From here on totalPages > maxPagesToShow, so we always have exactly maxPagesToShow items:
-	//   [0]        = first page (always 1)
-	//   [1..7]     = dynamic inner region (7 slots)
-	//   [8]        = last page (always totalPages)
-	//
-	// The inner 7 slots are filled in one of three ways:
-	//   Left:   pages 2..7,  gap,  _          → 1 [2 3 4 5 6 7] [...] [last]
-	//   Right:  _,  gap,  pages last-6..last-1 → [1] [...] [last-6 .. last-1] last
-	//   Middle: gap, page-2..page+2, gap       → [1] [...] [p-2 p-1 p p+1 p+2] [...] [last]
-	//
-	// Derived constants (all from maxPagesToShow = 9):
-	//   innerSlots      = maxPagesToShow - 2  = 7   (slots between first and last)
-	//   sidePageCount   = innerSlots - 1      = 6   (pages shown in left/right mode)
-	//   middlePageCount = innerSlots - 2      = 5   (pages shown in middle mode)
-	//   middleHalf      = middlePageCount / 2 = 2   (pages on each side of current)
-	//   leftThreshold   = sidePageCount / 2 + 1 = 4 (current <= this → left mode; current is within the left window)
-	//   rightThreshold  = totalPages - sidePageCount/2 = totalPages-3 (current >= this → right mode)
+	// There are more pages that can be shown so we will always show the max pages in one of 3 ways:
+	// Left:   1 2 3 4 5 6 7 ... last
+	// Right:  1 ... last-6 last-5 last-4 last-3 last-2 last-1 last
+	// Middle: 1 ... p-2 p-1 p p+1 p+2 ... last
 
-	innerSlots := maxPagesToShow - 2
-	sidePageCount := innerSlots - 1
-	middleHalf := (innerSlots - 2) / 2
-
-	leftThreshold := sidePageCount/2 + 1
-	rightThreshold := totalPages - sidePageCount/2
-
-	// Prepare the items slice
+	// Prepare a slice for the items
 	items := make([]pagingItem, maxPagesToShow)
 
-	// Add the first and last
+	// Always add the first and last page
 	items[0] = pagingItem{PageNum: 1, Label: "1", IsCurrent: page == 1}
 	items[maxPagesToShow-1] = pagingItem{PageNum: totalPages, Label: strconv.Itoa(totalPages), IsCurrent: page == totalPages}
 
+	// Create a gap item which can be used left and/or right
 	gap := pagingItem{Label: "...", IsGap: true}
 
+	// Define the number of inner pages that are dynamic
+	innerSlots := maxPagesToShow - 2
+
+	// Define the thresholds for left or right mode
+	leftThreshold := (innerSlots + 1) / 2 // Ceiling of half the inner slots
+	rightThreshold := totalPages - leftThreshold + 1
+
+	// Handle the different modes
 	switch {
 	case page <= leftThreshold:
-		// Left mode: show pages 2..sidePageCount+1, then gap.
-		for i := 2; i <= sidePageCount+1; i++ {
+		// Left mode: show pages 2..innerSlots, then gap.
+		for i := 2; i <= innerSlots; i++ {
 			items[i-1] = pagingItem{PageNum: i, Label: strconv.Itoa(i), IsCurrent: i == page}
 		}
 		items[maxPagesToShow-2] = gap
 
 	case page >= rightThreshold:
-		// Right mode: gap, then show pages totalPages-sidePageCount..totalPages-1.
+		// Right mode: gap, then show the last pages until totalPages-1.
 		items[1] = gap
-		for i := totalPages - sidePageCount; i <= totalPages-1; i++ {
-			items[i-(totalPages-sidePageCount)+2] = pagingItem{PageNum: i, Label: strconv.Itoa(i), IsCurrent: i == page}
+		startPage := totalPages - (innerSlots - 1)
+		for i := startPage; i <= totalPages-1; i++ {
+			items[i-startPage+2] = pagingItem{PageNum: i, Label: strconv.Itoa(i), IsCurrent: i == page}
 		}
 
 	default:
 		// Middle mode: gap, middleHalf pages left of current, current, middleHalf pages right, gap.
 		items[1] = gap
 		items[maxPagesToShow-2] = gap
-		for i := page - middleHalf; i <= page+middleHalf; i++ {
-			items[i-(page-middleHalf)+2] = pagingItem{PageNum: i, Label: strconv.Itoa(i), IsCurrent: i == page}
+		numItems := innerSlots - 2 // Number of items to show in the middle (excluding gaps)
+		halfItems := numItems / 2
+		for i := page - halfItems; i <= page+halfItems; i++ {
+			items[i-(page-halfItems)+2] = pagingItem{PageNum: i, Label: strconv.Itoa(i), IsCurrent: i == page}
 		}
 	}
 
