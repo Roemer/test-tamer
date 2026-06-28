@@ -7,6 +7,9 @@
         {{- range .Columns }}
         <th scope="col">{{ .Header }}</th>
         {{- end }}
+        {{- if .HasAnyActions }}
+        <th scope="col">Actions</th>
+        {{- end }}
       </tr>
     </thead>
     {{- end }}
@@ -16,6 +19,15 @@
       <tr>
         {{- range .Cells }}
         <td>{{ .Value }}</td>
+        {{- end }}
+        {{- if .Actions }}
+        <td class="actions">
+          {{- range .Actions }}
+          <button class="{{ .Class }}" {{ .Attrs }}>
+            {{ .Label }}
+          </button>
+          {{- end }}
+        </td>
         {{- end }}
       </tr>
       {{- end }}
