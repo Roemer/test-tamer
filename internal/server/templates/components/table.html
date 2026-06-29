@@ -1,0 +1,42 @@
+{{- define "table" -}}
+<div class="table-responsive">
+  <table class="table table-hover align-middle tt-table mb-0">
+    {{- if .Columns }}
+    <thead>
+      <tr>
+        {{- range .Columns }}
+        <th scope="col">{{ .Header }}</th>
+        {{- end }}
+        {{- if .HasAnyActions }}
+        <th scope="col">Actions</th>
+        {{- end }}
+      </tr>
+    </thead>
+    {{- end }}
+    <tbody>
+      {{- if .Rows }}
+      {{- range .Rows }}
+      <tr>
+        {{- range .Cells }}
+        <td>{{ .Value }}</td>
+        {{- end }}
+        {{- if .Actions }}
+        <td class="actions">
+          {{- range .Actions }}
+          <button class="{{ .Class }}" {{ .Attrs }}>
+            {{ .Label }}
+          </button>
+          {{- end }}
+        </td>
+        {{- end }}
+      </tr>
+      {{- end }}
+      {{- else }}
+      <tr>
+        <td {{ if .Columns }}colspan="{{ len .Columns }}"{{ end }} class="text-center text-secondary py-4">No Entries</td>
+      </tr>
+      {{- end }}
+    </tbody>
+  </table>
+</div>
+{{ end }}
