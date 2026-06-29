@@ -79,6 +79,10 @@
         color: #64748b;
         border-bottom-width: 1px;
       }
+
+      .tt-toast-wrap {
+        z-index: 1100;
+      }
     </style>
   </head>
   <body>
@@ -125,8 +129,93 @@
       <small>Version {{ appVersion }}</small>
     </footer>
 
+    <div id="tt-toast-container" class="toast-container position-fixed top-0 end-0 p-3 tt-toast-wrap">
+      <div id="tt-success-toast-template" class="toast text-bg-success border-0 d-none" role="status" aria-live="polite" aria-atomic="true" data-bs-delay="3500">
+        <div class="d-flex">
+          <div class="toast-body"></div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+      </div>
+      <div id="tt-error-toast-template" class="toast text-bg-danger border-0 d-none" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="5000">
+        <div class="d-flex">
+          <div class="toast-body"></div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+      </div>
+    </div>
+
     <script src="/static/vendor/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
     <script src="/static/vendor/htmx.min.js" integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V" crossorigin="anonymous"></script>
+    <script>
+      function showToast(type, message) {
+        // Early exit without message
+        if (!message) {
+          return;
+        }
+        // Define the template
+        var templateName = type === "success" ? "tt-success-toast-template" : "tt-error-toast-template";
+        var containerEl = document.getElementById("tt-toast-container");
+        var templateEl = document.getElementById(templateName);
+        if (!containerEl || !templateEl) {
+          return;
+        }
+        // Clone the template
+        const toastEl = templateEl.cloneNode(true);
+        toastEl.removeAttribute("id");
+        toastEl.classList.remove("d-none");
+        // Set the message
+        const toastBodyEl = toastEl.querySelector(".toast-body");
+        if (!toastBodyEl) {
+          return;
+        }
+        toastBodyEl.textContent = message;
+        // Append the toast
+        containerEl.appendChild(toastEl);
+        // Make sure to remove the toast element from the DOM when it's hidden
+        toastEl.addEventListener("hidden.bs.toast", function () {
+          toastEl.remove();
+        });
+        // Show the toast
+        const toast = new bootstrap.Toast(toastEl);
+        toast.show();
+      }
+
+      function showSuccessToast(message) {
+        showToast("success", message || "Success.");
+      }
+
+      function showErrorToast(message) {
+        showToast("error", message || "An error occurred.");
+      }
+
+      (function () {
+        document.body.addEventListener("tt:toast", function (event) {
+          const detail = event.detail || {};
+          const message = typeof detail.message === "string" ? detail.message : "";
+          showToast(detail.type, message);
+        });
+
+        document.body.addEventListener("htmx:responseError", function (event) {
+          const requestConfig = event.detail && event.detail.requestConfig;
+          if (!requestConfig) {
+            return;
+          }
+          const xhr = event.detail && event.detail.xhr;
+          const responseMessage = xhr && typeof xhr.responseText === "string"
+            ? xhr.responseText.trim()
+            : "";
+          showErrorToast(responseMessage);
+        });
+
+        document.body.addEventListener("htmx:sendError", function (event) {
+          const requestConfig = event.detail && event.detail.requestConfig;
+          if (!requestConfig) {
+            return;
+          }
+          showErrorToast("Request could not be sent.");
+        });
+      })();
+    </script>
   </body>
 </html>
 {{ end }}

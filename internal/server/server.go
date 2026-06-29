@@ -99,13 +99,28 @@ func (s *Server) Start() {
 }
 
 func (s *Server) setupRoutes() {
+	// Setup the handlers
+	frontendHandlers := NewFrontendHandlers(s)
+	apiHandlers := NewAPIHandlers(s)
+
 	// Static resources
 	s.mux.Handle("GET /static/", http.StripPrefix("/static", http.FileServer(http.FS(s.staticFS))))
 
-	// Frontend
-	s.mux.HandleFunc("GET /{$}", s.handleFrontendIndex)
-	s.mux.HandleFunc("GET /projects", s.handleFrontendProjects)
+	// Register the routes
+	frontendHandlers.registerRoutes(s.mux)
+	apiHandlers.registerRoutes(s.mux)
+}
 
-	// Catch-all for 404 errors (must be last - matches anything not matched above)
-	s.mux.HandleFunc("/", s.handlePageNotFound)
+func (s *Server) corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Set CORS headers
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }

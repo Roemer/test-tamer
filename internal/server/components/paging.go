@@ -1,4 +1,4 @@
-package server
+package components
 
 import (
 	"strconv"
@@ -6,17 +6,11 @@ import (
 )
 
 const (
-	defaultPageSize = 10
-	maxPageSize     = 100
+	DefaultPageSize = 10
+	MaxPageSize     = 100
 )
 
-type breadcrumbItem struct {
-	Name   string
-	Link   string
-	Active bool
-}
-
-type pagingData struct {
+type Paging struct {
 	BaseUrl           string
 	Target            string
 	IndicatorID       string
@@ -25,29 +19,29 @@ type pagingData struct {
 	PageSize          int
 	TotalItems        int
 	TotalPages        int
-	Items             []pagingItem
+	Items             []PagingItem
 	HasPrev           bool
 	HasNext           bool
 	PrevPage          int
 	NextPage          int
 }
 
-type pagingItem struct {
+type PagingItem struct {
 	PageNum   int
 	Label     string
 	IsCurrent bool
 	IsGap     bool
 }
 
-func newPaging(baseUrl, target string, page, pageSize, totalItems int) *pagingData {
+func NewPaging(baseUrl, target string, page, pageSize, totalItems int) *Paging {
 	if pageSize <= 0 {
-		pageSize = defaultPageSize
+		pageSize = DefaultPageSize
 	}
-	pageSize = min(pageSize, maxPageSize)
+	pageSize = min(pageSize, MaxPageSize)
 	indicatorID := strings.TrimPrefix(target, "#") + "-loading"
 	totalPages := max((totalItems+pageSize-1)/pageSize, 1)
 	page = max(1, min(page, totalPages))
-	return &pagingData{
+	return &Paging{
 		BaseUrl:           baseUrl,
 		Target:            target,
 		IndicatorID:       indicatorID,
@@ -64,14 +58,14 @@ func newPaging(baseUrl, target string, page, pageSize, totalItems int) *pagingDa
 	}
 }
 
-func buildPagingItems(page, totalPages int) []pagingItem {
+func buildPagingItems(page, totalPages int) []PagingItem {
 	const maxPagesToShow = 9 // Needs to be uneven!
 
 	// Special case when all pages can be shown without gaps
 	if totalPages <= maxPagesToShow {
-		items := make([]pagingItem, 0, totalPages)
+		items := make([]PagingItem, 0, totalPages)
 		for i := 1; i <= totalPages; i++ {
-			items = append(items, pagingItem{PageNum: i, Label: strconv.Itoa(i), IsCurrent: i == page})
+			items = append(items, PagingItem{PageNum: i, Label: strconv.Itoa(i), IsCurrent: i == page})
 		}
 		return items
 	}
@@ -82,14 +76,14 @@ func buildPagingItems(page, totalPages int) []pagingItem {
 	// Middle: 1 ... p-2 p-1 p p+1 p+2 ... last
 
 	// Prepare a slice for the items
-	items := make([]pagingItem, maxPagesToShow)
+	items := make([]PagingItem, maxPagesToShow)
 
 	// Always add the first and last page
-	items[0] = pagingItem{PageNum: 1, Label: "1", IsCurrent: page == 1}
-	items[maxPagesToShow-1] = pagingItem{PageNum: totalPages, Label: strconv.Itoa(totalPages), IsCurrent: page == totalPages}
+	items[0] = PagingItem{PageNum: 1, Label: "1", IsCurrent: page == 1}
+	items[maxPagesToShow-1] = PagingItem{PageNum: totalPages, Label: strconv.Itoa(totalPages), IsCurrent: page == totalPages}
 
 	// Create a gap item which can be used left and/or right
-	gap := pagingItem{Label: "...", IsGap: true}
+	gap := PagingItem{Label: "...", IsGap: true}
 
 	// Define the number of inner pages that are dynamic
 	innerSlots := maxPagesToShow - 2
@@ -103,7 +97,7 @@ func buildPagingItems(page, totalPages int) []pagingItem {
 	case page <= leftThreshold:
 		// Left mode: show pages 2..innerSlots, then gap.
 		for i := 2; i <= innerSlots; i++ {
-			items[i-1] = pagingItem{PageNum: i, Label: strconv.Itoa(i), IsCurrent: i == page}
+			items[i-1] = PagingItem{PageNum: i, Label: strconv.Itoa(i), IsCurrent: i == page}
 		}
 		items[maxPagesToShow-2] = gap
 
@@ -112,7 +106,7 @@ func buildPagingItems(page, totalPages int) []pagingItem {
 		items[1] = gap
 		startPage := totalPages - (innerSlots - 1)
 		for i := startPage; i <= totalPages-1; i++ {
-			items[i-startPage+2] = pagingItem{PageNum: i, Label: strconv.Itoa(i), IsCurrent: i == page}
+			items[i-startPage+2] = PagingItem{PageNum: i, Label: strconv.Itoa(i), IsCurrent: i == page}
 		}
 
 	default:
@@ -122,20 +116,20 @@ func buildPagingItems(page, totalPages int) []pagingItem {
 		numItems := innerSlots - 2 // Number of items to show in the middle (excluding gaps)
 		halfItems := numItems / 2
 		for i := page - halfItems; i <= page+halfItems; i++ {
-			items[i-(page-halfItems)+2] = pagingItem{PageNum: i, Label: strconv.Itoa(i), IsCurrent: i == page}
+			items[i-(page-halfItems)+2] = PagingItem{PageNum: i, Label: strconv.Itoa(i), IsCurrent: i == page}
 		}
 	}
 
 	return items
 }
 
-func (p *pagingData) PageUrl(pageNum int) string {
-	return p.BaseUrl + "?" + p.pageQueryPart(pageNum)
+func (p *Paging) PageUrl(pageNum int) string {
+	return p.BaseUrl + "?" + p.PageQueryPart(pageNum)
 }
 
-func (p *pagingData) pageQueryPart(pageNum int) string {
+func (p *Paging) PageQueryPart(pageNum int) string {
 	query := "page=" + strconv.Itoa(pageNum)
-	if p.PageSize != defaultPageSize {
+	if p.PageSize != DefaultPageSize {
 		query = "page-size=" + strconv.Itoa(p.PageSize) + "&" + query
 	}
 	return query

@@ -1,42 +1,66 @@
 package server
 
 import (
+	"encoding/json"
+	"errors"
+	"fmt"
 	"html/template"
 	"log/slog"
 	"net/http"
+
+	"github.com/google/uuid"
+	"github.com/roemer/test-tamer/internal/repositories"
+	"github.com/roemer/test-tamer/internal/server/components"
 )
 
-func (s *Server) handleFrontendIndex(w http.ResponseWriter, r *http.Request) {
-	type pageData struct {
-		Breadcrumbs []breadcrumbItem
-	}
-	data := pageData{
-		Breadcrumbs: []breadcrumbItem{},
-	}
-	s.renderPage(w, r, "pages/home.html", data)
+type FrontendHandlers struct {
+	server *Server
 }
 
-func (s *Server) handleFrontendProjects(w http.ResponseWriter, r *http.Request) {
+func NewFrontendHandlers(server *Server) *FrontendHandlers {
+	return &FrontendHandlers{server: server}
+}
+
+func (h *FrontendHandlers) registerRoutes(router *http.ServeMux) {
+	router.HandleFunc("GET /{$}", h.handleFrontendIndex)
+	router.HandleFunc("GET /projects", h.handleFrontendProjects)
+	router.HandleFunc("DELETE /projects/{publicID}", h.handleFrontendProjectDelete)
+
+	// Catch-all for 404 errors (must be last - matches anything not matched above)
+	router.HandleFunc("/", h.handlePageNotFound)
+}
+
+func (h *FrontendHandlers) handleFrontendIndex(w http.ResponseWriter, r *http.Request) {
+	type pageData struct {
+		Breadcrumbs []components.BreadcrumbItem
+	}
+	data := pageData{
+		Breadcrumbs: []components.BreadcrumbItem{},
+	}
+	h.server.renderPage(w, r, "pages/home.html", data)
+}
+
+func (h *FrontendHandlers) handleFrontendProjects(w http.ResponseWriter, r *http.Request) {
 	page := queryParseInt(r, "page", 1)
-	pageSize := queryParseInt(r, "page-size", defaultPageSize)
-	pageSize = min(pageSize, maxPageSize)
+	pageSize := queryParseInt(r, "page-size", components.DefaultPageSize)
+	pageSize = min(pageSize, components.MaxPageSize)
 
 	if r.Header.Get("HX-Request") == "true" {
 		type partialData struct {
-			ProjectsTable tableComponent
-			Paging        *pagingData
+			ProjectsTable *components.Table
+			Paging        *components.Paging
 		}
 
-		totalProjects, err := s.config.Store.Repos().Project.Count(r.Context())
+		totalProjects, err := h.server.config.Store.Repos().Project.Count(r.Context())
 		if err != nil {
 			slog.Error("failed to count projects", "error", err)
 			http.Error(w, "Failed to load projects.", http.StatusInternalServerError)
 			return
 		}
 
-		paging := newPaging("/projects", "#project-list", page, pageSize, totalProjects)
+		paging := components.NewPaging("/projects", "#project-list", page, pageSize, totalProjects)
 
-		projects, err := s.config.Store.Repos().Project.ListPaged(r.Context(), paging.Page, paging.PageSize)
+		projects, err := h.server.config.Store.Repos().Project.ListPaged(r.Context(), paging.Page, paging.PageSize)
 		if err != nil {
 			slog.Error("failed to list projects", "error", err)
 			http.Error(w, "Failed to load projects.", http.StatusInternalServerError)
@@ -44,45 +68,85 @@ func (s *Server) handleFrontendProjects(w http.ResponseWriter, r *http.Request) 
 		}
 
 		data := partialData{
-			ProjectsTable: tableComponent{
-				Columns: []tableComponentColumn{
+			ProjectsTable: &components.Table{
+				Columns: []components.TableColumn{
 					{Header: "ID"},
 					{Header: "Name"},
 				},
-				Rows: []tableComponentRow{},
+				Rows: []components.TableRow{},
 			},
 			Paging: paging,
 		}
 		for _, project := range projects {
-			data.ProjectsTable.Rows = append(data.ProjectsTable.Rows, tableComponentRow{
-				Cells: []tableComponentCell{
+			data.ProjectsTable.Rows = append(data.ProjectsTable.Rows, components.TableRow{
+				Cells: []components.TableCell{
 					{Value: project.PublicID.String()},
 					{Value: project.Name},
 				},
+				Actions: []components.TableAction{
+					{
+						Label: "Delete",
+						Class: "btn btn-danger btn-sm",
+						Attrs: HTMXAttrs(map[string]string{
+							"hx-delete":  fmt.Sprintf("/projects/%s?%s", project.PublicID.String(), paging.PageQueryPart(paging.Page)),
+							"hx-target":  "#project-list",
+							"hx-swap":    "innerHTML",
+							"hx-confirm": fmt.Sprintf("Delete project '%s'?", project.Name),
+						}),
+					},
+				},
 			})
 		}
-		s.renderPartial(w, "partials/projects/list.html", data)
+		h.server.renderPartial(w, "partials/projects/list.html", data)
 		return
 	}
 
 	type pageData struct {
-		Breadcrumbs []breadcrumbItem
+		Breadcrumbs []components.BreadcrumbItem
 		Page        int
 		PageSize    int
 	}
 	data := pageData{
-		Breadcrumbs: []breadcrumbItem{
+		Breadcrumbs: []components.BreadcrumbItem{
 			{Name: "Home", Link: "/", Active: false},
 			{Name: "Projects", Link: "/projects", Active: true},
 		},
 		Page:     page,
 		PageSize: pageSize,
 	}
-	s.renderPage(w, r, "pages/projects/list.html", data)
+	h.server.renderPage(w, r, "pages/projects/list.html", data)
 }
 
-func (s *Server) handlePageNotFound(w http.ResponseWriter, r *http.Request) {
-	s.renderErrorPage(w, http.StatusNotFound, "Not Found",
+func (h *FrontendHandlers) handleFrontendProjectDelete(w http.ResponseWriter, r *http.Request) {
+	httpError := func(message string, code int) {
+		http.Error(w, "Delete failed: "+message, code)
+	}
+	publicID, err := uuid.Parse(r.PathValue("publicID"))
+	if err != nil {
+		httpError("Invalid project identifier.", http.StatusBadRequest)
+		return
+	}
+	if err := h.server.config.Store.Repos().Project.DeleteByPublicID(r.Context(), publicID); err != nil {
+		if errors.Is(err, repositories.ErrNotFound) {
+			httpError("Project not found.", http.StatusNotFound)
+			return
+		}
+		slog.Error("failed to delete project", "public_id", publicID, "error", err)
+		httpError("Error.", http.StatusInternalServerError)
+		return
+	}
+
+	if r.Header.Get("HX-Request") == "true" {
+		h.server.triggerToast(w, "success", "Project deleted successfully.")
+		h.handleFrontendProjects(w, r)
+		return
+	}
+
+	http.Redirect(w, r, "/projects", http.StatusSeeOther)
+}
+
+func (h *FrontendHandlers) handlePageNotFound(w http.ResponseWriter, r *http.Request) {
+	h.server.renderErrorPage(w, http.StatusNotFound, "Not Found",
 		"The page you're looking for doesn't exist.",
 		"Requested path: "+r.URL.Path)
 }
@@ -123,14 +187,14 @@ func (s *Server) renderErrorPage(w http.ResponseWriter, statusCode int, statusTe
 	}
 
 	type pageData struct {
-		Breadcrumbs []breadcrumbItem
+		Breadcrumbs []components.BreadcrumbItem
 		StatusCode  int
 		StatusText  string
 		Message     string
 		Details     string
 	}
 	data := pageData{
-		Breadcrumbs: []breadcrumbItem{},
+		Breadcrumbs: []components.BreadcrumbItem{},
 		StatusCode:  statusCode,
 		StatusText:  statusText,
 		Message:     message,
@@ -160,4 +224,15 @@ func (s *Server) templateFuncs() template.FuncMap {
 			return s
 		},
 	}
+}
+
+func (s *Server) triggerToast(w http.ResponseWriter, toastType, message string) {
+	payload := map[string]any{
+		"tt:toast": map[string]string{
+			"type":    toastType,
+			"message": message,
+		},
+	}
+	b, _ := json.Marshal(payload)
+	w.Header().Set("HX-Trigger", string(b))
 }
