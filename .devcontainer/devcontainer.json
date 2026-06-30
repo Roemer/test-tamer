@@ -1,0 +1,32 @@
+{
+  "name": "Test Tamer DEV",
+  "initializeCommand": {
+    "user-env": "touch ${localWorkspaceFolder}/.devcontainer/.env"
+  },
+  "dockerComposeFile": "docker-compose.yaml",
+  "service": "dev.local",
+  "workspaceFolder": "/workspaces",
+  "containerEnv": {
+    "GOMODCACHE": "${containerWorkspaceFolder}/.caches/go"
+  },
+  "features": {
+    "ghcr.io/postfinance/devcontainer-features/go:1.0.0": {
+      "version": "1.26.4"
+    },
+    "ghcr.io/postfinance/devcontainer-features/docker-out:1.0.0": {
+      "version": "29.5.3",
+      "composeVersion": "none",
+      "buildxVersion": "0.34.1"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.go",
+        "ms-azuretools.vscode-docker",
+        "roemer.gotaskr-vscode",
+        "ms-ossdata.vscode-pgsql"
+      ]
+    }
+  }
+}

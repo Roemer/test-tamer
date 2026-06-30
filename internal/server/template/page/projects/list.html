@@ -1,0 +1,16 @@
+{{ define "content" }}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3 mb-0">Projects</h1>
+  <a href="/projects/new" class="btn btn-primary">New Project</a>
+</div>
+
+<div id="project-list" hx-get="/projects?page-size={{ .PageSize }}&page={{ .Page}}" hx-trigger="load"
+  hx-swap="innerHTML">
+  <div class="d-flex align-items-center gap-2 text-secondary">
+    <div class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>
+    <span>Loading projects...</span>
+  </div>
+</div>
+
+{{ end }}

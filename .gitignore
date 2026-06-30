@@ -1,0 +1,6 @@
+# Secrets
+.devcontainer/.env
+# Caches
+.caches/
+# Vendor files
+internal/server/static/vendor/
