@@ -2,7 +2,6 @@ package memory
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -25,10 +24,6 @@ func (s *projectStore) Create(ctx context.Context, project model.Project) (model
 		if p.ID > maxId {
 			maxId = p.ID
 		}
-		// Also check if the slug already exists
-		if p.Slug == project.Slug {
-			return model.Project{}, fmt.Errorf("project slug already exists")
-		}
 	}
 	// Set the values
 	project.ID = maxId + 1
@@ -50,12 +45,6 @@ func (s *projectStore) GetByPublicID(ctx context.Context, publicID uuid.UUID) (m
 }
 
 func (s *projectStore) Update(ctx context.Context, project model.Project) (model.Project, error) {
-	for _, existing := range s.projects {
-		if existing.Slug == project.Slug && existing.ID != project.ID {
-			return model.Project{}, fmt.Errorf("project slug already exists")
-		}
-	}
-
 	for i, existing := range s.projects {
 		if existing.ID == project.ID {
 			project.PublicID = existing.PublicID
@@ -67,6 +56,16 @@ func (s *projectStore) Update(ctx context.Context, project model.Project) (model
 	}
 
 	return model.Project{}, store.ErrNotFound
+}
+
+func (s *projectStore) DeleteByPublicID(ctx context.Context, publicID uuid.UUID) error {
+	for i, project := range s.projects {
+		if project.PublicID == publicID {
+			s.projects = append(s.projects[:i], s.projects[i+1:]...)
+			return nil
+		}
+	}
+	return store.ErrNotFound
 }
 
 func (s *projectStore) List(ctx context.Context, page, pageSize int) ([]model.Project, error) {

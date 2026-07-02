@@ -22,6 +22,11 @@ func (s *Server) registerFrontendRoutes(router *http.ServeMux) {
 	router.HandleFunc("POST /projects/new", s.frontend.CreateProject)
 	router.HandleFunc("GET /projects/{public_id}/edit", s.frontend.EditProjectForm)
 	router.HandleFunc("POST /projects/{public_id}/edit", s.frontend.UpdateProject)
+	router.HandleFunc("DELETE /projects/{public_id}/delete", s.frontend.DeleteProject)
+	router.HandleFunc("POST /projects/{public_id}/delete", s.frontend.DeleteProject)
+
+	// Catch-all for 404 errors (must be last - matches anything not matched above)
+	router.HandleFunc("/", s.frontend.PageNotFound)
 }
 
 func (s *Server) registerAPIRoutes(router *http.ServeMux) {

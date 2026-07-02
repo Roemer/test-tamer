@@ -23,6 +23,7 @@ type ProjectStore interface {
 	Create(ctx context.Context, project model.Project) (model.Project, error)
 	GetByPublicID(ctx context.Context, publicID uuid.UUID) (model.Project, error)
 	Update(ctx context.Context, project model.Project) (model.Project, error)
+	DeleteByPublicID(ctx context.Context, publicID uuid.UUID) error
 	List(ctx context.Context, page, pageSize int) ([]model.Project, error)
 	Count(ctx context.Context) (int, error)
 }

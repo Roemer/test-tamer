@@ -28,6 +28,10 @@ func (s *projectStore) Update(ctx context.Context, project model.Project) (model
 	return model.Project{}, store.ErrNotFound
 }
 
+func (s *projectStore) DeleteByPublicID(ctx context.Context, publicID uuid.UUID) error {
+	return store.ErrNotFound
+}
+
 func (s *projectStore) List(ctx context.Context, page, pageSize int) ([]model.Project, error) {
 	return nil, nil
 }

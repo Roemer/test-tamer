@@ -1,12 +1,13 @@
 package frontend
 
 import (
-	"encoding/json"
 	"fmt"
+	"html"
 	"html/template"
 	"io/fs"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/roemer/test-tamer/internal/component"
 	"github.com/roemer/test-tamer/internal/store"
@@ -26,16 +27,19 @@ func NewFrontendHandler(templatesFS fs.FS, version string, store store.Client) *
 	}
 }
 
-func (h *FrontendHandler) Home(w http.ResponseWriter, r *http.Request) {
-	type pageData struct {
-		Breadcrumbs []component.BreadcrumbItem
-	}
-	data := pageData{
-		Breadcrumbs: []component.BreadcrumbItem{},
-	}
-	h.renderPage(w, r, "page/home.html", data)
+// Renders the page not found error
+func (h *FrontendHandler) PageNotFound(w http.ResponseWriter, r *http.Request) {
+	h.renderErrorPage(w, http.StatusNotFound, "Not Found",
+		"The page you're looking for doesn't exist.",
+		"Requested path: "+r.URL.Path)
 }
 
+// Renders an internal server error page with an optional error message
+func (h *FrontendHandler) InternalServerError(w http.ResponseWriter, r *http.Request, text string, details string) {
+	h.renderErrorPage(w, http.StatusInternalServerError, "Internal Server Error", text, details)
+}
+
+// Renders a partial template
 func (h *FrontendHandler) renderPartial(w http.ResponseWriter, templateName string, data any) {
 	tmpl, err := template.New("").Funcs(h.templateFuncs()).ParseFS(h.templatesFS, "component/*.html", templateName)
 	if err != nil {
@@ -49,6 +53,7 @@ func (h *FrontendHandler) renderPartial(w http.ResponseWriter, templateName stri
 	}
 }
 
+// Renders a full page template with the base layout
 func (h *FrontendHandler) renderPage(w http.ResponseWriter, r *http.Request, pageTemplate string, data any) {
 	_ = r
 	tmpl, err := template.New("").Funcs(h.templateFuncs()).ParseFS(h.templatesFS, "layout/base.html", "component/*.html", pageTemplate)
@@ -64,9 +69,8 @@ func (h *FrontendHandler) renderPage(w http.ResponseWriter, r *http.Request, pag
 	}
 }
 
+// Renders an error page
 func (h *FrontendHandler) renderErrorPage(w http.ResponseWriter, statusCode int, statusText, message string, details string) {
-	tmpl2, _ := json.MarshalIndent(h.templatesFS, "", "  ")
-	fmt.Println("Templates FS:", string(tmpl2)) // Debugging line to print the templatesFS structure
 	tmpl, err := template.New("").Funcs(h.templateFuncs()).ParseFS(h.templatesFS, "layout/base.html", "page/error.html")
 	if err != nil {
 		slog.Error("failed to parse error template", "error", err)
@@ -75,14 +79,14 @@ func (h *FrontendHandler) renderErrorPage(w http.ResponseWriter, statusCode int,
 	}
 
 	type pageData struct {
-		Breadcrumbs []component.BreadcrumbItem
+		Breadcrumbs component.Breadcrumbs
 		StatusCode  int
 		StatusText  string
 		Message     string
 		Details     string
 	}
 	data := pageData{
-		Breadcrumbs: []component.BreadcrumbItem{},
+		Breadcrumbs: component.NewBreadcrumbs(),
 		StatusCode:  statusCode,
 		StatusText:  statusText,
 		Message:     message,
@@ -96,6 +100,7 @@ func (h *FrontendHandler) renderErrorPage(w http.ResponseWriter, statusCode int,
 	}
 }
 
+// Functions to be used in templates
 func (h *FrontendHandler) templateFuncs() template.FuncMap {
 	return template.FuncMap{
 		"appVersion": func() string {
@@ -109,4 +114,16 @@ func (h *FrontendHandler) templateFuncs() template.FuncMap {
 			return s
 		},
 	}
+}
+
+// HTMXAttrs generates a string of HTML attributes for HTMX requests.
+func HTMXAttrs(attrs map[string]string) template.HTMLAttr {
+	var b strings.Builder
+	for k, v := range attrs {
+		fmt.Fprintf(&b, `%s="%s" `,
+			html.EscapeString(k),
+			html.EscapeString(v),
+		)
+	}
+	return template.HTMLAttr(b.String())
 }

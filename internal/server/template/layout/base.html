@@ -8,8 +8,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ block "title" . }}Test Tamer{{ end }}</title>
   <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
-  <link href="/static/vendor/bootstrap.min.css" rel="stylesheet"
-    integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+  <link href="/static/vendor/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
   <style>
     body {
       min-height: 100vh;
@@ -72,14 +71,16 @@
 
   <main class="py-4">
     <div class="container">
-      {{- if .Breadcrumbs }}
+      {{- if .Breadcrumbs.Items }}
       <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-          {{- range .Breadcrumbs }}
+          {{- range .Breadcrumbs.Items }}
           {{- if .Active }}
           <li class="breadcrumb-item active" aria-current="page">{{ .Name }}</li>
-          {{- else }}
+          {{- else if .Link }}
           <li class="breadcrumb-item"><a href="{{ .Link }}">{{ .Name }}</a></li>
+          {{- else }}
+          <li class="breadcrumb-item">{{ .Name }}</li>
           {{- end }}
           {{- end }}
         </ol>
@@ -96,12 +97,8 @@
     </div>
   </footer>
 
-  <script src="/static/vendor/bootstrap.bundle.min.js"
-    integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
-    crossorigin="anonymous"></script>
-  <script src="/static/vendor/htmx.min.js"
-    integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V"
-    crossorigin="anonymous"></script>
+  <script src="/static/vendor/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+  <script src="/static/vendor/htmx.min.js" integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V" crossorigin="anonymous"></script>
 </body>
 
 </html>
