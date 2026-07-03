@@ -1,0 +1,33 @@
+{{ define "title" }}Test Tamer - {{ .Title }}{{ end }}
+
+{{ define "content" }}
+<div class="row justify-content-center py-2">
+	<div class="col-lg-7">
+		<div class="d-flex justify-content-between align-items-center mb-3">
+			<h1 class="h3 mb-0">{{ .Heading }}</h1>
+			<a href="/projects" class="btn btn-outline-secondary">Back to Projects</a>
+		</div>
+
+		<div class="card border-0 shadow-sm">
+			<div class="card-body p-4">
+				{{- if .ErrorMessage }}
+				<div class="alert alert-danger" role="alert">{{ .ErrorMessage }}</div>
+				{{- end }}
+
+				<form method="post" action="{{ .FormAction }}" class="row g-3">
+					<div class="col-12">
+						<label for="name" class="form-label">Project Name</label>
+						<input id="name" name="name" type="text" class="form-control" value="{{ .Name }}"
+							placeholder="My Project" required>
+					</div>
+
+					<div class="col-12 d-flex justify-content-end gap-2 pt-2">
+						<a href="/projects" class="btn btn-outline-secondary">Cancel</a>
+						<button type="submit" class="btn btn-primary">{{ .SubmitLabel }}</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+</div>
+{{ end }}

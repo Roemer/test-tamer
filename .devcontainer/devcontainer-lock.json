@@ -1,0 +1,14 @@
+{
+  "features": {
+    "ghcr.io/postfinance/devcontainer-features/docker-out:1.0.0": {
+      "version": "1.0.0",
+      "resolved": "ghcr.io/postfinance/devcontainer-features/docker-out@sha256:22d3e61bad5411b5076ba64d478b2e71eecb2a05441e4bff34487bfc892e6a81",
+      "integrity": "sha256:22d3e61bad5411b5076ba64d478b2e71eecb2a05441e4bff34487bfc892e6a81"
+    },
+    "ghcr.io/postfinance/devcontainer-features/go:1.0.0": {
+      "version": "1.0.0",
+      "resolved": "ghcr.io/postfinance/devcontainer-features/go@sha256:6d86a6603d980120a14e458854ce025932ff6ce7dd14b5f51fdbf1185c9bb5ab",
+      "integrity": "sha256:6d86a6603d980120a14e458854ce025932ff6ce7dd14b5f51fdbf1185c9bb5ab"
+    }
+  }
+}
