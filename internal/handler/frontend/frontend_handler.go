@@ -1,6 +1,7 @@
 package frontend
 
 import (
+	"encoding/json"
 	"fmt"
 	"html"
 	"html/template"
@@ -114,6 +115,17 @@ func (h *FrontendHandler) templateFuncs() template.FuncMap {
 			return s
 		},
 	}
+}
+
+func (h *FrontendHandler) triggerToast(w http.ResponseWriter, toastType, message string) {
+	payload := map[string]any{
+		"tt:toast": map[string]string{
+			"type":    toastType,
+			"message": message,
+		},
+	}
+	b, _ := json.Marshal(payload)
+	w.Header().Set("HX-Trigger", string(b))
 }
 
 // HTMXAttrs generates a string of HTML attributes for HTMX requests.

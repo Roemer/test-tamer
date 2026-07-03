@@ -13,6 +13,16 @@ import (
 	"github.com/roemer/test-tamer/internal/store"
 )
 
+type projectFormPageData struct {
+	Breadcrumbs  component.Breadcrumbs
+	Title        string
+	Heading      string
+	FormAction   string
+	SubmitLabel  string
+	Name         string
+	ErrorMessage string
+}
+
 func (h *FrontendHandler) Projects(w http.ResponseWriter, r *http.Request) {
 	page := shared.QueryParsePositiveInt(r, "page", 1)
 	pageSize := shared.QueryParsePositiveInt(r, "page-size", component.DefaultPageSize)
@@ -242,6 +252,7 @@ func (h *FrontendHandler) DeleteProject(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
+		h.triggerToast(w, "success", "Project deleted successfully.")
 		page := shared.QueryParsePositiveInt(r, "page", 1)
 		pageSize := shared.QueryParsePositiveInt(r, "page-size", component.DefaultPageSize)
 		pageSize = min(pageSize, component.MaxPageSize)
@@ -316,16 +327,6 @@ func (h *FrontendHandler) renderProjectsListPartial(w http.ResponseWriter, r *ht
 		Paging: paging,
 	}
 	h.renderPartial(w, "partial/projects/list.html", data)
-}
-
-type projectFormPageData struct {
-	Breadcrumbs  component.Breadcrumbs
-	Title        string
-	Heading      string
-	FormAction   string
-	SubmitLabel  string
-	Name         string
-	ErrorMessage string
 }
 
 func (h *FrontendHandler) renderProjectForm(w http.ResponseWriter, r *http.Request, data projectFormPageData) {
