@@ -8,7 +8,12 @@ import (
 	"github.com/roemer/test-tamer/internal/model"
 )
 
-var ErrNotFound = errors.New("not found")
+var (
+	ErrNotFound         = errors.New("not found")
+	ErrTooMany          = errors.New("too many records found")
+	ErrInvalid          = errors.New("invalid argument")
+	ErrUniqueConstraint = errors.New("unique constraint violation")
+)
 
 type Stores struct {
 	Projects ProjectStore

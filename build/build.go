@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/sha512"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"log/slog"
@@ -9,7 +11,9 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/golang-migrate/migrate/v4"
 	"github.com/roemer/gotaskr"
+	"github.com/roemer/test-tamer/internal/store/postgres"
 )
 
 func main() {
@@ -18,6 +22,8 @@ func main() {
 
 func init() {
 	gotaskr.Task("vendor:init", vendorInit)
+	gotaskr.Task("db-down", dbDown)
+	gotaskr.Task("db-up", dbUp)
 }
 
 ////////////////////////////////////////////////////////////
@@ -61,7 +67,7 @@ func vendorInit() error {
 			return fmt.Errorf("failed to download file '%s': %w", f.Url, err)
 		}
 		// Calculate the SHA384 checksum of the downloaded file
-		/*data, err := os.ReadFile(targetPath)
+		data, err := os.ReadFile(targetPath)
 		if err != nil {
 			return fmt.Errorf("failed to read file '%s': %w", targetPath, err)
 		}
@@ -69,12 +75,30 @@ func vendorInit() error {
 		shaString := "sha384-" + base64.StdEncoding.EncodeToString(hash[:])
 
 		// Verify the integrity checksum inside the templates
-		if err := vendorCheckIntegrity("internal/server/templates/layouts/base.html", f.Dest, shaString); err != nil {
+		if err := vendorCheckIntegrity("internal/server/template/layout/base.html", f.Dest, shaString); err != nil {
 			return err
-		}*/
+		}
 	}
 
 	return nil
+}
+
+func dbDown() error {
+	dbUrl, err := postgres.BuildDbUrlFromEnv()
+	if err != nil {
+		return fmt.Errorf("failed to build database URL: %w", err)
+	}
+	m := postgres.NewMigrator(dbUrl, os.DirFS("internal/store/postgres"))
+	return m.MigrateDown()
+}
+
+func dbUp() error {
+	dbUrl, err := postgres.BuildDbUrlFromEnv()
+	if err != nil {
+		return fmt.Errorf("failed to build database URL: %w", err)
+	}
+	m := postgres.NewMigrator(dbUrl, os.DirFS("internal/store/postgres"))
+	return m.MigrateUp()
 }
 
 ////////////////////////////////////////////////////////////
@@ -123,4 +147,19 @@ func vendorCheckIntegrity(templateFile string, dependency string, expectedChecks
 
 	slog.Info("integrity checksum verified", "dependency", dependency, "template", templateFile)
 	return nil
+}
+
+func createMigrator() (*migrate.Migrate, error) {
+	dbUrl, err := postgres.BuildDbUrlFromEnv()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build database URL: %w", err)
+	}
+
+	m, err := migrate.New("file://internal/store/postgres/migrations", dbUrl)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create migrator: %w", err)
+	}
+	m.Log = postgres.DbMigrationConsoleLogger{}
+
+	return m, nil
 }
